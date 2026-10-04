@@ -1,0 +1,1 @@
+nStar is an astronomical analysis software that can quickly analyze and organize FITS star data. Primarily, it functions as a program that checks for poor setup like a telescope out of backfocus, sensor tilt, abberrations, and it can also check for tracking inaccuracies. It comes in a user friendly GUI that's easy to use.
