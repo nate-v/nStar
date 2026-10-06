@@ -1,5 +1,7 @@
 import sys
 
+import numpy as np
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
   QApplication,
   QFileDialog,
@@ -18,8 +20,16 @@ class MainWindow(QMainWindow):
     self.ui = Ui_MainWindow()
     self.ui.setupUi(self)
     self.image_data = None
+    self.filtered_image_data = None
+    self.median_filter_enabled = False
     self.gamma = 0.5
     self.applyStretch = False
+
+    self.median_filter_action = QAction("Median filter", self)
+    self.median_filter_action.setCheckable(True)
+    self.median_filter_action.setChecked(False)
+    self.median_filter_action.toggled.connect(self.toggle_median_filter)
+    self.ui.menuData.addAction(self.median_filter_action)
 
     self.ui.actionImport_FITS.triggered.connect(self.import_fits)
     self.ui.actionIncrease.triggered.connect(self.increase_gamma)
@@ -39,25 +49,47 @@ class MainWindow(QMainWindow):
       return
 
     try:
-      self.image_data = displayFits.load(file_path)
+      image_data = displayFits.load(file_path)
+      filtered_image_data = dataFunctions.dataFunctions().medianFilterKernel(image_data, 7)
     except (OSError, ValueError) as error:
       QMessageBox.critical(self, "Could not load FITS file", str(error))
       return
 
+    self.image_data = image_data
+    self.filtered_image_data = filtered_image_data
     self.ui.statusbar.showMessage(f"{file_path}")
     self.show_fits(self.image_data)
 
   def show_fits(self, data):
-    if self.applyStretch:
-      norm_data = dataFunctions.dataFunctions().normalize(data, 1.0, 99.5, self.gamma)
-    else:
-      norm_data = data
-    if self.fits_window is None:
-      self.fits_window = FitsDisplayWindow(norm_data)
-    else:
-      self.fits_window.set_image_data(norm_data)
+    reference_data = self.image_data if self.image_data is not None else data
 
+    if self.median_filter_enabled and self.filtered_image_data is not None:
+      display_data = self.filtered_image_data
+    else:
+      display_data = data
+
+    if self.applyStretch:
+      norm_data = dataFunctions.dataFunctions().normalize(
+        display_data, 1.0, 99.5, self.gamma, reference_data=reference_data
+      )
+      vmin, vmax = 0, 255
+    else:
+      norm_data = display_data
+      finite_pixels = reference_data[np.isfinite(reference_data)]
+      vmin, vmax = finite_pixels.min(), finite_pixels.max()
+      if vmin == vmax:
+        vmin, vmax = vmin - 0.5, vmax + 0.5
+    
+    if self.fits_window is None:
+      self.fits_window = FitsDisplayWindow(norm_data, vmin, vmax)
+    else:
+      self.fits_window.set_image_data(norm_data, vmin, vmax)
     self.fits_window.show()
+
+  def toggle_median_filter(self, enabled):
+    self.median_filter_enabled = enabled
+    if self.image_data is not None:
+      self.show_fits(self.image_data)
 
   def display_fits(self):
     if self.image_data is None:

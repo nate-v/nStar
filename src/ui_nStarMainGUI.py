@@ -29,7 +29,7 @@ from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
 
 class FitsDisplayWindow(QMainWindow):
-  def __init__(self, image_data):
+  def __init__(self, image_data, vmin=None, vmax=None):
     super().__init__()
     self.setWindowTitle("FITS Display")
     self.resize(700, 700)
@@ -43,7 +43,7 @@ class FitsDisplayWindow(QMainWindow):
 
     self.axes = figure.add_subplot(111)
     self.image_artist = self.axes.imshow(
-      image_data, cmap="gray", origin="lower"
+      image_data, cmap="gray", origin="lower", vmin=vmin, vmax=vmax
     )
     #draw circles
     #c = Circle((1000, 1000), radius=50, edgecolor='red', fill=False)
@@ -55,7 +55,7 @@ class FitsDisplayWindow(QMainWindow):
 
     
 
-  def set_image_data(self, image_data):
+  def set_image_data(self, image_data, vmin=None, vmax=None):
     self.image_artist.set_data(image_data)
     height, width = image_data.shape
     self.image_artist.set_extent(
@@ -63,7 +63,10 @@ class FitsDisplayWindow(QMainWindow):
     )
     self.axes.set_xlim(-0.5, width - 0.5)
     self.axes.set_ylim(-0.5, height - 0.5)
-    self.image_artist.autoscale()
+    if vmin is None or vmax is None:
+      self.image_artist.autoscale()
+    else:
+      self.image_artist.set_clim(vmin, vmax)
     self.canvas.draw_idle()
 
 class Ui_MainWindow(object):
