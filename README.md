@@ -1,1 +1,1 @@
-nStar is currently still in early development.
+nStar is currentlyin early development.
