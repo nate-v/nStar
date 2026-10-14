@@ -45,15 +45,23 @@ class FitsDisplayWindow(QMainWindow):
     self.image_artist = self.axes.imshow(
       image_data, cmap="gray", origin="lower", vmin=vmin, vmax=vmax
     )
-    #draw circles
-    #c = Circle((1000, 1000), radius=50, edgecolor='red', fill=False)
-    #self.axes.add_patch(c)
+    self.star_circles = []
 
     figure.tight_layout()
 
     self.setCentralWidget(container)
 
-    
+  def set_star_circles(self, star_x, star_y, star_r):
+    for circle in self.star_circles:
+      circle.remove()
+
+    self.star_circles = [
+      Circle((x, y), radius=radius, edgecolor="red", fill=False)
+      for x, y, radius in zip(star_x, star_y, star_r)
+    ]
+    for circle in self.star_circles:
+      self.axes.add_patch(circle)
+    self.canvas.draw_idle()
 
   def set_image_data(self, image_data, vmin=None, vmax=None):
     self.image_artist.set_data(image_data)

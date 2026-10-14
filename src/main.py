@@ -58,12 +58,22 @@ class MainWindow(QMainWindow):
     self.image_data = image_data
     self.filtered_image_data = filtered_image_data
     self.ui.statusbar.showMessage(f"{file_path}")
-    self.show_fits(self.image_data)
+    self.display_fits()
 
-  def show_fits(self, data):
-    reference_data = self.image_data if self.image_data is not None else data
+  def show_fits(self, data, reference_data=None, apply_median_filter=True):
+    if reference_data is None:
+      reference_data = self.image_data if self.image_data is not None else data
 
-    if self.median_filter_enabled and self.filtered_image_data is not None:
+    star_x, star_y, star_r = dataFunctions.dataFunctions().detectStars(data, 5)
+    print(star_x)
+    print(star_y)
+    print(star_r)
+    
+    if (
+      apply_median_filter
+      and self.median_filter_enabled
+      and self.filtered_image_data is not None
+    ):
       display_data = self.filtered_image_data
     else:
       display_data = data
@@ -84,6 +94,8 @@ class MainWindow(QMainWindow):
       self.fits_window = FitsDisplayWindow(norm_data, vmin, vmax)
     else:
       self.fits_window.set_image_data(norm_data, vmin, vmax)
+    display_star_radii = [radius * 5 for radius in star_r] # for better display; circles around stars.
+    self.fits_window.set_star_circles(star_x, star_y, display_star_radii)
     self.fits_window.show()
 
   def toggle_median_filter(self, enabled):
@@ -95,7 +107,7 @@ class MainWindow(QMainWindow):
     if self.image_data is None:
       QMessageBox.critical(self, "No image imported.", str("No image imported."))
       return
-    self.show_fits(self.image_data)
+    self.show_fits(self.image_data, reference_data=self.image_data, apply_median_filter=False)
 
   def increase_gamma(self):
     if self.image_data is not None and self.gamma < 1.0:
